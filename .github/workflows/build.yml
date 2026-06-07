@@ -15,20 +15,19 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.22.0'
+        flutter-version: '3.16.0'
         channel: 'stable'
     
-    - name: Create fresh Flutter project
+    - name: Create minimal Flutter project
       run: |
-        # Crear proyecto nuevo en directorio temporal
+        # Crear proyecto con template mínimo
         cd /tmp
-        flutter create --org com.mplus2009 --project-name flutter_php_app fresh_app
+        flutter create --template=app --org com.mplus2009 --project-name flutter_php_app fresh_app
         
-        # Copiar nuestro código
+        # Reemplazar main.dart con nuestro código
         cp $GITHUB_WORKSPACE/lib/main.dart /tmp/fresh_app/lib/main.dart
-        cp $GITHUB_WORKSPACE/pubspec.yaml /tmp/fresh_app/pubspec.yaml
         
-        # Configurar AndroidManifest para permitir HTTP
+        # Crear AndroidManifest.xml correcto
         cat > /tmp/fresh_app/android/app/src/main/AndroidManifest.xml << 'EOM'
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET"/>
@@ -49,12 +48,22 @@ jobs:
         </manifest>
         EOM
         
-        # Compilar
+        # Crear MainActivity.kt básico
+        cat > /tmp/fresh_app/android/app/src/main/kotlin/com/mplus2009/flutter_php_app/MainActivity.kt << 'EOM'
+        package com.mplus2009.flutter_php_app
+        
+        import io.flutter.embedding.android.FlutterActivity
+        
+        class MainActivity: FlutterActivity()
+        EOM
+        
+        # Limpiar y compilar
         cd /tmp/fresh_app
+        flutter clean
         flutter pub get
         flutter build apk --release
         
-        # Copiar APK al workspace
+        # Copiar APK
         cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/app-release.apk
     
     - name: Upload APK
