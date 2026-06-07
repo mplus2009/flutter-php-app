@@ -15,56 +15,30 @@ jobs:
     - name: Setup Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: '3.16.0'
+        flutter-version: '3.22.0'
         channel: 'stable'
     
-    - name: Create Flutter project and build
+    - name: Build APK
       run: |
         # Crear proyecto
         cd /tmp
-        flutter create --org com.mplus2009 --project-name flutter_php_app fresh_app
+        flutter create --org com.mplus2009 fresh_app
+        cd fresh_app
         
-        # Copiar nuestro main.dart
-        cp $GITHUB_WORKSPACE/lib/main.dart /tmp/fresh_app/lib/main.dart
+        # Reemplazar main.dart
+        cp $GITHUB_WORKSPACE/lib/main.dart lib/main.dart
         
-        # Crear AndroidManifest.xml COMPLETO con flutterEmbedding
-        cat > /tmp/fresh_app/android/app/src/main/AndroidManifest.xml << 'EOM'
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET"/>
-            
-            <application
-                android:label="Flutter PHP"
-                android:name="io.flutter.app.FlutterApplication"
-                android:usesCleartextTraffic="true">
-                
-                <activity
-                    android:name=".MainActivity"
-                    android:exported="true"
-                    android:launchMode="singleTop"
-                    android:theme="@style/LaunchTheme"
-                    android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
-                    android:hardwareAccelerated="true"
-                    android:windowSoftInputMode="adjustResize">
-                    
-                    <meta-data
-                        android:name="io.flutter.embedding.android.NormalTheme"
-                        android:resource="@style/NormalTheme"/>
-                    
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN"/>
-                        <category android:name="android.intent.category.LAUNCHER"/>
-                    </intent-filter>
-                </activity>
-                
-                <meta-data
-                    android:name="flutterEmbedding"
-                    android:value="2"/>
-            </application>
-        </manifest>
-        EOM
+        # Modificar AndroidManifest.xml de forma simple
+        # Agregar usesCleartextTraffic y quitar FlutterApplication
+        sed -i 's/io.flutter.app.FlutterApplication/android.app.Application/' android/app/src/main/AndroidManifest.xml
+        sed -i 's/<application/<application android:usesCleartextTraffic="true"/' android/app/src/main/AndroidManifest.xml
+        
+        # Agregar permiso de Internet si no existe
+        if ! grep -q "INTERNET" android/app/src/main/AndroidManifest.xml; then
+          sed -i '/<manifest/a\    <uses-permission android:name="android.permission.INTERNET"/>' android/app/src/main/AndroidManifest.xml
+        fi
         
         # Compilar
-        cd /tmp/fresh_app
         flutter clean
         flutter pub get
         flutter build apk --release
