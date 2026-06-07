@@ -26,6 +26,8 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
+    namespace 'com.mplus2009.flutter_php_app'
+    
     compileSdk 34
 
     compileOptions {
