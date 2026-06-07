@@ -8,14 +8,57 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    
     steps:
     - uses: actions/checkout@v4
-    - uses: subosito/flutter-action@v2
+    
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.22.0'
-    - run: flutter pub get
-    - run: flutter build apk --release
-    - uses: actions/upload-artifact@v4
+        channel: 'stable'
+    
+    - name: Create fresh Flutter project
+      run: |
+        # Crear proyecto nuevo en directorio temporal
+        cd /tmp
+        flutter create --org com.mplus2009 --project-name flutter_php_app fresh_app
+        
+        # Copiar nuestro código
+        cp $GITHUB_WORKSPACE/lib/main.dart /tmp/fresh_app/lib/main.dart
+        cp $GITHUB_WORKSPACE/pubspec.yaml /tmp/fresh_app/pubspec.yaml
+        
+        # Configurar AndroidManifest para permitir HTTP
+        cat > /tmp/fresh_app/android/app/src/main/AndroidManifest.xml << 'EOM'
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET"/>
+            <application
+                android:label="Flutter PHP"
+                android:usesCleartextTraffic="true">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true"
+                    android:launchMode="singleTop"
+                    android:theme="@style/LaunchTheme">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN"/>
+                        <category android:name="android.intent.category.LAUNCHER"/>
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOM
+        
+        # Compilar
+        cd /tmp/fresh_app
+        flutter pub get
+        flutter build apk --release
+        
+        # Copiar APK al workspace
+        cp build/app/outputs/flutter-apk/app-release.apk $GITHUB_WORKSPACE/app-release.apk
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
       with:
         name: flutter-php-app
-        path: build/app/outputs/flutter-apk/app-release.apk
+        path: app-release.apk
